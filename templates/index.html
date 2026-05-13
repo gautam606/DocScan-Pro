@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocScan Pro — Advanced Document Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="bg-fx">
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-wrap">
+    <div class="logo-icon">DS</div>
+    <div class="logo-text">Doc<span>Scan</span> Pro</div>
+    <div class="logo-badge">ADVANCED</div>
+  </div>
+  <div class="header-right">
+    <div class="hdr-stat" id="hdrFileStatus" style="display:none"></div>
+  </div>
+</header>
+
+<div class="main-progress"><div class="main-progress-fill" id="mainProg"></div></div>
+
+<!-- APP LAYOUT -->
+<div class="app">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <div class="panel-section">
+      <div class="section-label">IMPORT</div>
+      <div class="upload-zone" id="dropZone">
+        <div class="upload-icon-wrap">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        </div>
+        <div class="upload-title">Drop Document Here</div>
+        <div class="upload-sub">or click to browse</div>
+        <div class="upload-formats">
+          <span class="fmt">JPG</span><span class="fmt">PNG</span><span class="fmt">TIFF</span><span class="fmt">WEBP</span>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+      <div class="file-info" id="fileInfo">
+        <div class="fi-icon">◈</div>
+        <div class="fi-details">
+          <div class="fi-name" id="fiName">—</div>
+          <div class="fi-meta" id="fiMeta">—</div>
+        </div>
+        <button class="fi-remove" id="fiRemove">×</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">FILTER MODE</div>
+      <div class="filter-grid" id="filterGrid">
+        <div class="filter-pill active" data-filter="bw"><span class="fp-icon">⬛</span>B&W SCAN</div>
+        <div class="filter-pill" data-filter="grayscale"><span class="fp-icon">🌫</span>GRAYSCALE</div>
+        <div class="filter-pill" data-filter="high_contrast"><span class="fp-icon">⚡</span>HI-CONTRAST</div>
+        <div class="filter-pill" data-filter="sharp"><span class="fp-icon">🔬</span>ULTRA SHARP</div>
+        <div class="filter-pill" data-filter="brightness"><span class="fp-icon">☀️</span>BRIGHTEN</div>
+        <div class="filter-pill" data-filter="original"><span class="fp-icon">🎨</span>ORIGINAL</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">ROTATE OUTPUT</div>
+      <div class="rotate-btns">
+        <button class="rotate-btn" id="btnRotLeft" disabled onclick="rotateDoc('left')">↺ Left</button>
+        <button class="rotate-btn" id="btnRotRight" disabled onclick="rotateDoc('right')">↻ Right</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CENTER PANEL -->
+  <div class="center-panel">
+
+    <div class="toolbar">
+      <button class="tool-btn primary" id="btnScan" disabled onclick="scanDocument()">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        SCAN DOCUMENT
+      </button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" id="btnReset" onclick="resetAll()">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        RESET
+      </button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn green-btn" id="btnDownload" disabled onclick="downloadFile()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        EXPORT
+      </button>
+      <div class="view-tabs">
+        <button class="vtab active" data-view="split" onclick="setView('split',this)">SPLIT VIEW</button>
+        <button class="vtab" data-view="original" onclick="setView('original',this)">ORIGINAL</button>
+        <button class="vtab" data-view="scanned" onclick="setView('scanned',this)">SCANNED</button>
+      </div>
+    </div>
+
+    <div class="canvas-area" id="canvasArea">
+
+      <!-- Empty state -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="3"/></svg>
+        </div>
+        <div class="empty-title">No Document Loaded</div>
+        <div class="empty-sub">Upload an image to begin scanning</div>
+        <div class="empty-hint">
+          <div class="hint-item"><span class="hi">✦</span> Edge Detection</div>
+          <div class="hint-item"><span class="hi">✦</span> Auto Crop</div>
+          <div class="hint-item"><span class="hi">✦</span> Perspective Fix</div>
+          <div class="hint-item"><span class="hi">✦</span> Shadow Removal</div>
+        </div>
+      </div>
+
+      <!-- Split View -->
+      <div class="split-view" id="splitView">
+        <div class="doc-card" style="width:47%">
+          <div class="doc-label">ORIGINAL INPUT</div>
+          <div class="doc-frame">
+            <img id="imgOriginal" src="" alt="Original">
+            <div class="scan-anim" id="scanAnimOrig">
+              <div class="scan-lines"></div><div class="scan-beam"></div>
+              <div class="scan-corner sc-tl"></div><div class="scan-corner sc-tr"></div>
+              <div class="scan-corner sc-bl"></div><div class="scan-corner sc-br"></div>
+            </div>
+          </div>
+        </div>
+        <div class="doc-card" style="width:47%">
+          <div class="doc-label">PROCESSED OUTPUT</div>
+          <div class="doc-frame">
+            <img id="imgOutput" src="" alt="Scanned">
+            <div class="scan-anim" id="scanAnimOut">
+              <div class="scan-lines"></div><div class="scan-beam"></div>
+              <div class="scan-corner sc-tl"></div><div class="scan-corner sc-tr"></div>
+              <div class="scan-corner sc-bl"></div><div class="scan-corner sc-br"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single Views -->
+      <div class="single-view" id="singleOriginal">
+        <div class="doc-label">ORIGINAL INPUT</div>
+        <div class="doc-frame"><img id="imgSingleOrig" src="" alt="Original"></div>
+      </div>
+      <div class="single-view" id="singleScanned">
+        <div class="doc-label">PROCESSED OUTPUT</div>
+        <div class="doc-frame"><img id="imgSingleScanned" src="" alt="Scanned"></div>
+      </div>
+
+      <!-- Loader overlay -->
+      <div class="loader-overlay" id="loaderOverlay" style="display:none">
+        <div class="loader-box">
+          <div class="spinner"></div>
+          <p id="loaderText">Processing…</p>
+        </div>
+      </div>
+
+      <!-- Error bar -->
+      <div class="error-bar" id="errorBar" style="display:none">
+        <span id="errorMsg"></span>
+        <button onclick="document.getElementById('errorBar').style.display='none'">✕</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <div class="panel-section">
+      <div class="section-label">ANALYTICS</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-val" id="statW">—<span>px</span></div><div class="stat-label">WIDTH</div></div>
+        <div class="stat-card"><div class="stat-val" id="statH">—<span>px</span></div><div class="stat-label">HEIGHT</div></div>
+        <div class="stat-card"><div class="stat-val" id="statSize">—<span>kb</span></div><div class="stat-label">FILE SIZE</div></div>
+        <div class="stat-card"><div class="stat-val" id="statFilter">—</div><div class="stat-label">FILTER</div></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">OUTPUT PREVIEW</div>
+      <div class="output-thumb" id="outputThumb" style="display:none" onclick="openFullscreen()">
+        <img id="thumbImg" src="" alt="">
+        <div class="output-thumb-overlay"><span>↗ CLICK TO ENLARGE</span></div>
+      </div>
+      <div style="color:var(--muted);font-size:10px;letter-spacing:0.1em;text-align:center;padding:20px 0;" id="thumbEmpty">
+        Processed output appears here
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">EXPORT</div>
+      <div class="dl-grid">
+        <button class="dl-btn" id="dlJPG" disabled onclick="downloadFile()"><span class="dl-icon">🖼</span>DOWNLOAD<span class="dl-fmt">JPEG</span></button>
+        <button class="dl-btn" id="dlCopy" disabled onclick="copyToClipboard()"><span class="dl-icon">📋</span>COPY<span class="dl-fmt">CLIPBOARD</span></button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-label">CONSOLE</div>
+      <div class="log-console" id="logConsole">
+        <div class="log-entry"><span class="log-time">00:00</span><span class="log-msg cyan">DocScan Pro initialized</span></div>
+        <div class="log-entry"><span class="log-time">00:00</span><span class="log-msg info">Awaiting document input…</span></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+let selectedFile = null;
+let outputFilename = null;
+let originalSrc = null;
+let currentFilter = 'bw';
+let currentView = 'split';
+
+// ── Upload ──────────────────────────────────────────────────────────────
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+document.getElementById('fiRemove').addEventListener('click', e => { e.stopPropagation(); resetAll(); });
+
+function handleFile(file) {
+  selectedFile = file;
+  document.getElementById('fiName').textContent = file.name;
+  document.getElementById('fiMeta').textContent = `${formatSize(file.size)} · ${file.type.split('/')[1].toUpperCase()}`;
+  document.getElementById('fileInfo').classList.add('show');
+
+  document.getElementById('btnScan').disabled = false;
+  document.getElementById('statSize').innerHTML = Math.round(file.size / 1024) + '<span>kb</span>';
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    originalSrc = ev.target.result;
+    const img = new Image();
+    img.onload = () => {
+      document.getElementById('statW').innerHTML = img.width + '<span>px</span>';
+      document.getElementById('statH').innerHTML = img.height + '<span>px</span>';
+    };
+    img.src = originalSrc;
+
+    // Set original images (both split and single)
+    document.getElementById('imgOriginal').src = originalSrc;
+    document.getElementById('imgSingleOrig').src = originalSrc;
+
+    document.getElementById('emptyState').style.display = 'none';
+    showView('split');
+    log(`File loaded: ${file.name}`, 'success');
+    log(`Size: ${formatSize(file.size)}`, 'info');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Filter pills ────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    currentFilter = p.dataset.filter;
+    document.getElementById('statFilter').textContent = p.dataset.filter.toUpperCase().replace('_', ' ');
+    if (outputFilename) refilter();
+  });
+});
+
+// ── View switching ──────────────────────────────────────────────────────
+function setView(view, btn) {
+  document.querySelectorAll('.vtab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentView = view;
+  if (selectedFile) showView(view);
+}
+
+function showView(view) {
+  document.getElementById('splitView').classList.remove('show');
+  document.getElementById('singleOriginal').classList.remove('show');
+  document.getElementById('singleScanned').classList.remove('show');
+  if (view === 'split') document.getElementById('splitView').classList.add('show');
+  else if (view === 'original') document.getElementById('singleOriginal').classList.add('show');
+  else if (view === 'scanned') document.getElementById('singleScanned').classList.add('show');
+}
+
+// ── Scan ────────────────────────────────────────────────────────────────
+async function scanDocument() {
+  if (!selectedFile) return;
+
+  document.getElementById('btnScan').disabled = true;
+  document.getElementById('scanAnimOrig').classList.add('active');
+  document.getElementById('scanAnimOut').classList.add('active');
+  log('═══ SCAN STARTED ═══', 'cyan');
+  setProgress(0);
+
+  const steps = [
+    { label: 'Analyzing document boundaries…', delay: 0,    pct: 18 },
+    { label: 'Applying perspective correction…', delay: 600, pct: 36 },
+    { label: 'Running noise reduction…',         delay: 1200, pct: 55 },
+    { label: 'Enhancing image quality…',         delay: 1800, pct: 74 },
+    { label: 'Applying filter & finalizing…',    delay: 2400, pct: 92 },
+  ];
+
+  steps.forEach(({ label, delay, pct }) => {
+    setTimeout(() => { log(label, 'info'); setProgress(pct); }, delay);
+  });
+
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+  formData.append('filter', currentFilter);
+
+  try {
+    const res = await fetch('/scan', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    setTimeout(() => {
+      document.getElementById('scanAnimOrig').classList.remove('active');
+      document.getElementById('scanAnimOut').classList.remove('active');
+      document.getElementById('btnScan').disabled = false;
+
+      if (data.error) { showError(data.error); log('Error: ' + data.error, 'error'); return; }
+
+      outputFilename = data.output_filename;
+      setScannedImage(data.scanned);
+      setProgress(100);
+      document.getElementById('btnDownload').disabled = false;
+      document.getElementById('btnRotLeft').disabled = false;
+      document.getElementById('btnRotRight').disabled = false;
+      document.getElementById('dlJPG').disabled = false;
+      document.getElementById('dlCopy').disabled = false;
+      log('═══ SCAN COMPLETE ═══', 'success');
+    }, 3000);
+
+  } catch (e) {
+    document.getElementById('btnScan').disabled = false;
+    showError('Scan failed. Please try again.');
+    log('Scan failed: ' + e.message, 'error');
+  }
+}
+
+// ── Re-filter ───────────────────────────────────────────────────────────
+async function refilter() {
+  if (!outputFilename) return;
+  showLoader('Applying filter…');
+  try {
+    const res = await fetch('/refilter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: outputFilename, filter: currentFilter })
+    });
+    const data = await res.json();
+    if (data.error) { showError(data.error); return; }
+    setScannedImage(data.scanned);
+    log('Filter applied: ' + currentFilter, 'success');
+  } catch (e) {
+    showError('Filter failed.');
+  } finally {
+    hideLoader();
+  }
+}
+
+// ── Rotate ──────────────────────────────────────────────────────────────
+async function rotateDoc(direction) {
+  if (!outputFilename) return;
+  showLoader('Rotating…');
+  try {
+    const res = await fetch('/rotate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: outputFilename, direction })
+    });
+    const data = await res.json();
+    if (data.error) { showError(data.error); return; }
+    setScannedImage(data.scanned);
+    log('Rotated ' + direction, 'info');
+  } catch (e) {
+    showError('Rotate failed.');
+  } finally {
+    hideLoader();
+  }
+}
+
+// ── Set scanned image — FIX: always use fresh timestamp ─────────────────
+function setScannedImage(src) {
+  // Strip old timestamp and add fresh one to bust cache
+  const base = src.split('?')[0];
+  const url = base + '?t=' + Date.now();
+
+  // Output panel (split view right side)
+  document.getElementById('imgOutput').src = url;
+  // Single scanned view
+  document.getElementById('imgSingleScanned').src = url;
+  // Thumbnail
+  document.getElementById('thumbImg').src = url;
+  document.getElementById('outputThumb').style.display = 'block';
+  document.getElementById('thumbEmpty').style.display = 'none';
+}
+
+// ── Download ────────────────────────────────────────────────────────────
+function downloadFile() {
+  if (!outputFilename) return;
+  const a = document.createElement('a');
+  a.href = '/download/' + outputFilename;
+  a.download = outputFilename;
+  a.click();
+  log('Exported: ' + outputFilename, 'success');
+}
+
+async function copyToClipboard() {
+  if (!outputFilename) return;
+  try {
+    const res = await fetch('/static/outputs/' + outputFilename);
+    const blob = await res.blob();
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    log('Image copied to clipboard', 'success');
+  } catch (e) {
+    log('Clipboard copy failed (browser restriction)', 'warn');
+  }
+}
+
+function openFullscreen() {
+  if (!outputFilename) return;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><body style="margin:0;background:#060810;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="/static/outputs/${outputFilename}?t=${Date.now()}" style="max-width:100vw;max-height:100vh;object-fit:contain"></body></html>`);
+}
+
+// ── Reset ───────────────────────────────────────────────────────────────
+function resetAll() {
+  selectedFile = null; outputFilename = null; originalSrc = null; currentFilter = 'bw';
+  fileInput.value = '';
+  document.getElementById('fileInfo').classList.remove('show');
+  document.getElementById('emptyState').style.display = 'flex';
+  document.getElementById('splitView').classList.remove('show');
+  document.getElementById('singleOriginal').classList.remove('show');
+  document.getElementById('singleScanned').classList.remove('show');
+  document.getElementById('imgOriginal').src = '';
+  document.getElementById('imgOutput').src = '';
+  document.getElementById('imgSingleOrig').src = '';
+  document.getElementById('imgSingleScanned').src = '';
+  document.getElementById('btnScan').disabled = true;
+  document.getElementById('btnDownload').disabled = true;
+  document.getElementById('btnRotLeft').disabled = true;
+  document.getElementById('btnRotRight').disabled = true;
+  document.getElementById('dlJPG').disabled = true;
+  document.getElementById('dlCopy').disabled = true;
+  document.getElementById('outputThumb').style.display = 'none';
+  document.getElementById('thumbEmpty').style.display = '';
+  setProgress(0);
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-filter="bw"]').classList.add('active');
+  document.getElementById('statW').innerHTML = '—<span>px</span>';
+  document.getElementById('statH').innerHTML = '—<span>px</span>';
+  document.getElementById('statSize').innerHTML = '—<span>kb</span>';
+  document.getElementById('statFilter').textContent = '—';
+  log('Session reset', 'warn');
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+function setProgress(pct) { document.getElementById('mainProg').style.width = pct + '%'; }
+
+function showLoader(text) {
+  document.getElementById('loaderText').textContent = text || 'Processing…';
+  document.getElementById('loaderOverlay').style.display = 'flex';
+}
+function hideLoader() { document.getElementById('loaderOverlay').style.display = 'none'; }
+
+function showError(msg) {
+  document.getElementById('errorMsg').textContent = '❌ ' + msg;
+  document.getElementById('errorBar').style.display = 'flex';
+}
+
+function log(msg, type = 'info') {
+  const t = new Date();
+  const time = `${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`;
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${time}</span><span class="log-msg ${type}">${msg}</span>`;
+  const console = document.getElementById('logConsole');
+  console.appendChild(entry);
+  console.scrollTop = console.scrollHeight;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+</script>
+</body>
+</html>

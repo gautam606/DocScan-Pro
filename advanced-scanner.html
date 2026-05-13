@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScanLab Pro — Advanced Document Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060810;
+  --bg2: #0c0f1a;
+  --surface: #111420;
+  --surface2: #181c2e;
+  --surface3: #1e2338;
+  --border: #252a40;
+  --border2: #2e3452;
+  --cyan: #00e5ff;
+  --cyan2: #00b8d4;
+  --green: #00e676;
+  --orange: #ff9800;
+  --red: #ff5252;
+  --purple: #7c4dff;
+  --text: #e8eaf6;
+  --text2: #9fa8c7;
+  --muted: #4a5280;
+  --glow-cyan: 0 0 20px rgba(0,229,255,0.3);
+  --glow-green: 0 0 20px rgba(0,230,118,0.3);
+  --radius: 8px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* Animated background */
+.bg-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.08;
+  animation: drift 15s ease-in-out infinite alternate;
+}
+.bg-orb:nth-child(1) { width:500px;height:500px;background:var(--cyan);top:-100px;left:-100px;animation-duration:18s; }
+.bg-orb:nth-child(2) { width:400px;height:400px;background:var(--purple);bottom:-80px;right:-80px;animation-duration:22s;animation-delay:-8s; }
+.bg-orb:nth-child(3) { width:300px;height:300px;background:var(--green);top:40%;left:50%;animation-duration:14s;animation-delay:-5s; }
+@keyframes drift { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(40px,30px) scale(1.1)} }
+
+/* Grid overlay */
+.bg-fx::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* HEADER */
+header {
+  position: relative;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 64px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(6,8,16,0.85);
+  backdrop-filter: blur(20px);
+}
+.logo-wrap { display:flex;align-items:center;gap:12px; }
+.logo-icon {
+  width:36px;height:36px;
+  background: linear-gradient(135deg,var(--cyan),var(--purple));
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff;
+  box-shadow: var(--glow-cyan);
+}
+.logo-text { font-family:'Syne',sans-serif;font-weight:800;font-size:18px; }
+.logo-text span { color:var(--cyan); }
+.logo-badge {
+  font-size:9px;letter-spacing:0.2em;
+  background:rgba(0,229,255,0.1);
+  border:1px solid rgba(0,229,255,0.2);
+  color:var(--cyan);padding:3px 8px;border-radius:20px;
+}
+.header-right { display:flex;align-items:center;gap:16px; }
+.hdr-stat {
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;letter-spacing:0.1em;color:var(--text2);
+  padding:6px 12px;
+  border:1px solid var(--border);border-radius:4px;
+  background: var(--surface);
+}
+.hdr-stat .dot { width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:var(--glow-green); }
+.hdr-stat.warn .dot { background:var(--orange); }
+
+/* MAIN LAYOUT */
+.app {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr 300px;
+  grid-template-rows: 1fr;
+  height: calc(100vh - 64px);
+  gap: 0;
+}
+
+/* LEFT PANEL */
+.left-panel {
+  border-right: 1px solid var(--border);
+  background: rgba(12,15,26,0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.left-panel::-webkit-scrollbar { width:4px; }
+.left-panel::-webkit-scrollbar-track { background:transparent; }
+.left-panel::-webkit-scrollbar-thumb { background:var(--border2);border-radius:2px; }
+
+.panel-section {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.section-label {
+  font-size:9px;letter-spacing:0.25em;color:var(--muted);
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:14px;
+  text-transform:uppercase;
+}
+.section-label::after { content:'';flex:1;height:1px;background:var(--border); }
+
+/* Upload zone */
+.upload-zone {
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 28px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: rgba(0,229,255,0.02);
+  position: relative;
+  overflow: hidden;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--cyan);
+  background: rgba(0,229,255,0.06);
+  box-shadow: inset 0 0 20px rgba(0,229,255,0.05);
+}
+.upload-zone::before {
+  content:'';position:absolute;inset:0;
+  background: radial-gradient(circle at 50% 0%, rgba(0,229,255,0.08), transparent 70%);
+  opacity:0;transition:opacity 0.3s;
+}
+.upload-zone:hover::before { opacity:1; }
+
+.upload-icon-wrap {
+  width:52px;height:52px;
+  background: linear-gradient(135deg,rgba(0,229,255,0.15),rgba(124,77,255,0.15));
+  border:1px solid var(--border2);
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 12px;
+  transition: all 0.3s;
+}
+.upload-zone:hover .upload-icon-wrap {
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+  transform: translateY(-2px);
+}
+.upload-icon-wrap svg { width:24px;height:24px;stroke:var(--cyan);fill:none;stroke-width:1.5; }
+.upload-title { font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:4px; }
+.upload-sub { font-size:10px;color:var(--text2);letter-spacing:0.05em;margin-bottom:10px; }
+.upload-formats { display:flex;gap:5px;justify-content:center;flex-wrap:wrap; }
+.fmt { font-size:9px;letter-spacing:0.12em;border:1px solid var(--border2);padding:2px 7px;border-radius:3px;color:var(--muted); }
+input[type=file] { display:none; }
+
+/* File info */
+.file-info {
+  display:none;
+  gap:10px;
+  padding:10px 12px;
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  border-radius:var(--radius);
+  margin-top:10px;
+  align-items:center;
+}
+.file-info.show { display:flex; }
+.fi-icon { color:var(--cyan);font-size:18px; }
+.fi-details { flex:1;min-width:0; }
+.fi-name { font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.fi-meta { font-size:10px;color:var(--muted);margin-top:2px; }
+.fi-remove { background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;transition:color 0.2s;padding:2px; }
+.fi-remove:hover { color:var(--red); }
+
+/* Setting rows */
+.setting {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;
+  gap:8px;
+}
+.setting:last-child { margin-bottom:0; }
+.setting-info .s-label { font-size:11px;letter-spacing:0.05em;color:var(--text); }
+.setting-info .s-sub { font-size:9px;color:var(--muted);margin-top:1px;letter-spacing:0.08em; }
+
+/* Toggle */
+.tog {
+  width:38px;height:20px;
+  background:var(--surface3);
+  border:1px solid var(--border2);
+  border-radius:10px;
+  cursor:pointer;
+  position:relative;
+  transition:all 0.25s;
+  flex-shrink:0;
+}
+.tog.on { background:rgba(0,229,255,0.15);border-color:var(--cyan); }
+.tog::after {
+  content:'';position:absolute;top:3px;left:3px;
+  width:12px;height:12px;border-radius:50%;
+  background:var(--muted);transition:all 0.25s;
+}
+.tog.on::after { left:21px;background:var(--cyan);box-shadow:0 0 8px rgba(0,229,255,0.6); }
+
+/* Slider */
+.slider-wrap { margin-bottom:14px; }
+.slider-wrap:last-child { margin-bottom:0; }
+.slider-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:6px; }
+.slider-header .s-label { font-size:10px;letter-spacing:0.1em;color:var(--text2); }
+.slider-header .s-val { font-size:10px;color:var(--cyan);font-weight:500; }
+input[type=range] {
+  -webkit-appearance:none;width:100%;height:3px;
+  border-radius:3px;outline:none;cursor:pointer;
+  background: linear-gradient(90deg, var(--cyan) var(--pct,50%), var(--border2) var(--pct,50%));
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none;width:14px;height:14px;
+  border-radius:50%;background:var(--cyan);
+  border:2px solid var(--bg);
+  box-shadow:0 0 8px rgba(0,229,255,0.5);
+  transition:transform 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.2); }
+
+/* Select */
+.styled-sel {
+  background:var(--surface3);border:1px solid var(--border2);
+  color:var(--text);font-family:'JetBrains Mono',monospace;
+  font-size:10px;padding:6px 10px;border-radius:4px;
+  cursor:pointer;outline:none;letter-spacing:0.05em;
+  transition:border-color 0.2s;width:100%;
+  -webkit-appearance:none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a5280'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right:28px;
+}
+.styled-sel:focus { border-color:var(--cyan); }
+
+/* Filter pills */
+.filter-grid {
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:6px;margin-bottom:4px;
+}
+.filter-pill {
+  padding:8px 6px;
+  border:1px solid var(--border2);
+  border-radius:5px;
+  background:var(--surface2);
+  cursor:pointer;
+  transition:all 0.2s;
+  text-align:center;
+  font-size:9px;letter-spacing:0.1em;
+  color:var(--text2);
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.filter-pill .fp-icon { font-size:16px; }
+.filter-pill:hover { border-color:var(--cyan);color:var(--text); }
+.filter-pill.active { border-color:var(--cyan);background:rgba(0,229,255,0.1);color:var(--cyan); }
+
+/* CENTER */
+.center-panel {
+  display:flex;flex-direction:column;
+  background:var(--bg2);
+  overflow:hidden;
+}
+
+/* Toolbar */
+.toolbar {
+  display:flex;align-items:center;gap:8px;
+  padding:10px 20px;
+  border-bottom:1px solid var(--border);
+  background:rgba(6,8,16,0.8);
+  flex-shrink:0;
+}
+.tool-sep { width:1px;height:24px;background:var(--border);margin:0 4px; }
+.tool-btn {
+  padding:6px 12px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:4px;
+  color:var(--text2);
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:0.1em;
+  cursor:pointer;
+  transition:all 0.2s;
+  display:flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.tool-btn:hover { border-color:var(--cyan);color:var(--cyan); }
+.tool-btn.primary {
+  background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+  border-color:var(--cyan);
+  color:#060810;
+  font-weight:600;
+  box-shadow:var(--glow-cyan);
+}
+.tool-btn.primary:hover { transform:translateY(-1px);box-shadow:0 0 30px rgba(0,229,255,0.4); }
+.tool-btn.primary:disabled { opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none; }
+.tool-btn.green-btn {
+  background:rgba(0,230,118,0.1);
+  border-color:rgba(0,230,118,0.3);
+  color:var(--green);
+}
+.tool-btn.green-btn:hover { background:rgba(0,230,118,0.2);box-shadow:var(--glow-green); }
+.tool-btn.green-btn:disabled { opacity:0.3;cursor:not-allowed; }
+.tool-btn svg { width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8; }
+
+.view-tabs { display:flex;gap:4px;margin-left:auto; }
+.vtab {
+  padding:5px 14px;font-size:9px;letter-spacing:0.15em;
+  border:1px solid var(--border);border-radius:4px;
+  background:transparent;color:var(--muted);
+  cursor:pointer;transition:all 0.2s;
+  font-family:'JetBrains Mono',monospace;
+}
+.vtab.active { border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,0.08); }
+
+/* Canvas area */
+.canvas-area {
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:24px;overflow:auto;position:relative;
+  background: radial-gradient(ellipse at center, rgba(0,229,255,0.03) 0%, transparent 70%);
+}
+
+/* Empty state */
+.empty-state {
+  text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+}
+.empty-state.hidden { display:none; }
+.empty-icon {
+  width:80px;height:80px;
+  border:1px solid var(--border2);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);
+  animation: pulse-border 3s ease-in-out infinite;
+}
+@keyframes pulse-border {
+  0%,100%{border-color:var(--border2);}
+  50%{border-color:rgba(0,229,255,0.3);}
+}
+.empty-icon svg { width:36px;height:36px;stroke:var(--muted);fill:none;stroke-width:1.5; }
+.empty-title { font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:var(--text2); }
+.empty-sub { font-size:11px;color:var(--muted);letter-spacing:0.05em; }
+.empty-hint {
+  display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-top:8px;
+}
+.hint-item {
+  display:flex;align-items:center;gap:6px;
+  font-size:10px;color:var(--muted);letter-spacing:0.08em;
+}
+.hint-item .hi { color:var(--cyan); }
+
+/* Split view */
+.split-view {
+  display:none;width:100%;height:100%;
+  gap:12px;align-items:flex-start;
+  justify-content:center;
+}
+.split-view.show { display:flex; }
+.doc-card {
+  display:flex;flex-direction:column;align-items:center;
+  max-width:48%;
+}
+.doc-label {
+  font-size:9px;letter-spacing:0.2em;color:var(--muted);
+  margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+}
+.doc-label::before,.doc-label::after { content:'';flex:1;height:1px;background:var(--border); }
+.doc-frame {
+  position:relative;border-radius:6px;overflow:hidden;
+  border:1px solid var(--border2);
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  background:var(--surface);
+}
+.doc-frame canvas, .doc-frame img { display:block;max-width:100%;max-height:55vh;object-fit:contain; }
+
+/* Single view */
+.single-view {
+  display:none;flex-direction:column;align-items:center;
+  max-width:600px;width:100%;
+}
+.single-view.show { display:flex; }
+
+/* Scan animation overlay */
+.scan-anim {
+  position:absolute;inset:0;pointer-events:none;display:none;border-radius:6px;overflow:hidden;
+}
+.scan-anim.active { display:block; }
+.scan-beam {
+  position:absolute;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  box-shadow:0 0 20px var(--cyan),0 0 40px rgba(0,229,255,0.3);
+  animation:beam 1.8s ease-in-out infinite;
+}
+@keyframes beam { 0%{top:0;opacity:1} 90%{opacity:1} 100%{top:100%;opacity:0} }
+.scan-lines {
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(0,229,255,0.04) 0px,transparent 2px,transparent 5px);
+}
+.scan-corner {
+  position:absolute;width:24px;height:24px;border-color:var(--cyan);border-style:solid;
+  animation:corner-pulse 1.8s ease-in-out infinite;
+}
+@keyframes corner-pulse { 0%,100%{opacity:0.4}50%{opacity:1} }
+.sc-tl { top:8px;left:8px;border-width:2px 0 0 2px; }
+.sc-tr { top:8px;right:8px;border-width:2px 2px 0 0; }
+.sc-bl { bottom:8px;left:8px;border-width:0 0 2px 2px; }
+.sc-br { bottom:8px;right:8px;border-width:0 2px 2px 0; }
+
+/* Edge detection dots */
+.edge-dots { position:absolute;inset:0;pointer-events:none;display:none; }
+.edge-dots.show { display:block; }
+.e-dot {
+  position:absolute;width:12px;height:12px;
+  border-radius:50%;background:var(--cyan);
+  border:2px solid #fff;
+  box-shadow:0 0 10px var(--cyan);
+  transform:translate(-50%,-50%);
+  cursor:move;
+  transition:transform 0.2s;
+}
+.e-dot:hover { transform:translate(-50%,-50%) scale(1.4); }
+.e-line { position:absolute;inset:0;pointer-events:none; }
+
+/* RIGHT PANEL */
+.right-panel {
+  border-left:1px solid var(--border);
+  background:rgba(12,15,26,0.7);
+  backdrop-filter:blur(10px);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+.right-panel::-webkit-scrollbar { width:4px; }
+.right-panel::-webkit-scrollbar-thumb { background:var(--border2);border-radius:2px; }
+
+/* Progress steps */
+.steps-wrap { padding:20px; }
+.step-item {
+  display:flex;gap:12px;align-items:flex-start;
+  margin-bottom:16px;position:relative;
+}
+.step-item:last-child { margin-bottom:0; }
+.step-item::before {
+  content:'';position:absolute;left:15px;top:32px;bottom:-16px;
+  width:1px;background:var(--border);
+}
+.step-item:last-child::before { display:none; }
+.step-num {
+  width:30px;height:30px;border-radius:50%;
+  border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;color:var(--muted);
+  flex-shrink:0;background:var(--surface);
+  transition:all 0.3s;
+  z-index:1;
+}
+.step-item.active .step-num { border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,0.1);box-shadow:var(--glow-cyan); }
+.step-item.done .step-num { border-color:var(--green);color:var(--green);background:rgba(0,230,118,0.1); }
+.step-content .sc-title { font-size:11px;font-weight:600;letter-spacing:0.05em;margin-bottom:2px; }
+.step-content .sc-sub { font-size:9px;color:var(--muted);letter-spacing:0.08em; }
+.step-bar {
+  height:3px;background:var(--border);border-radius:3px;
+  margin-top:8px;overflow:hidden;display:none;
+}
+.step-item.active .step-bar { display:block; }
+.step-bar-fill {
+  height:100%;background:linear-gradient(90deg,var(--cyan),var(--purple));
+  border-radius:3px;width:0%;
+  transition:width 0.4s ease;
+  box-shadow:0 0 8px rgba(0,229,255,0.5);
+}
+
+/* Stats panel */
+.stats-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.stat-card {
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px;
+  transition:border-color 0.2s;
+}
+.stat-card:hover { border-color:var(--border2); }
+.stat-val { font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:var(--text); }
+.stat-val span { font-size:11px;font-weight:400;color:var(--muted); }
+.stat-label { font-size:9px;letter-spacing:0.15em;color:var(--muted);margin-top:2px; }
+.stat-change { font-size:9px;color:var(--green);margin-top:4px; }
+
+/* Output card */
+.output-thumb {
+  border:1px solid var(--border2);border-radius:var(--radius);
+  overflow:hidden;cursor:pointer;
+  transition:all 0.2s;display:none;
+  position:relative;
+}
+.output-thumb.show { display:block; }
+.output-thumb:hover { border-color:var(--cyan);box-shadow:var(--glow-cyan); }
+.output-thumb img { width:100%;display:block; }
+.output-thumb-overlay {
+  position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(6,8,16,0.9) 0%,transparent 50%);
+  display:flex;align-items:flex-end;padding:12px;opacity:0;
+  transition:opacity 0.2s;
+}
+.output-thumb:hover .output-thumb-overlay { opacity:1; }
+.output-thumb-overlay span { font-size:10px;color:var(--cyan);letter-spacing:0.1em; }
+
+/* Download buttons */
+.dl-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.dl-btn {
+  padding:10px 8px;
+  border:1px solid var(--border2);
+  border-radius:var(--radius);
+  background:var(--surface2);
+  color:var(--text2);
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:0.1em;
+  cursor:pointer;
+  transition:all 0.2s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  text-align:center;
+}
+.dl-btn:hover { border-color:var(--green);color:var(--green);background:rgba(0,230,118,0.05); }
+.dl-btn:disabled { opacity:0.3;cursor:not-allowed; }
+.dl-btn .dl-icon { font-size:18px; }
+.dl-btn .dl-fmt { font-size:8px;letter-spacing:0.15em;color:var(--muted); }
+
+/* Progress bar */
+.main-progress {
+  height:2px;background:var(--border);
+  position:relative;overflow:hidden;flex-shrink:0;
+}
+.main-progress-fill {
+  height:100%;background:linear-gradient(90deg,var(--cyan),var(--purple),var(--green));
+  width:0%;transition:width 0.4s ease;
+  box-shadow:0 0 10px var(--cyan);
+}
+
+/* Log console */
+.log-console {
+  font-size:10px;letter-spacing:0.05em;
+  max-height:120px;overflow-y:auto;
+  background:var(--surface);
+  border:1px solid var(--border);border-radius:4px;
+  padding:10px;
+}
+.log-console::-webkit-scrollbar { width:3px; }
+.log-console::-webkit-scrollbar-thumb { background:var(--border2); }
+.log-entry { margin-bottom:4px;display:flex;gap:8px; }
+.log-entry:last-child { margin-bottom:0; }
+.log-time { color:var(--muted);flex-shrink:0; }
+.log-msg.info { color:var(--text2); }
+.log-msg.success { color:var(--green); }
+.log-msg.warn { color:var(--orange); }
+.log-msg.error { color:var(--red); }
+.log-msg.cyan { color:var(--cyan); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:6px;height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2);border-radius:3px; }
+
+/* Responsive */
+@media(max-width:1100px){
+  .app { grid-template-columns:240px 1fr 260px; }
+}
+@media(max-width:800px){
+  .app { grid-template-columns:1fr;grid-template-rows:auto 1fr auto;height:auto; }
+  .left-panel,.right-panel { max-height:50vh; }
+}
+
+/* Tooltip */
+[data-tip] { position:relative; }
+[data-tip]:hover::after {
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:var(--surface3);border:1px solid var(--border2);
+  color:var(--text2);font-size:10px;letter-spacing:0.05em;
+  padding:4px 10px;border-radius:4px;white-space:nowrap;
+  pointer-events:none;z-index:999;
+}
+
+/* Animations for load */
+@keyframes fadeUp {
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.left-panel { animation:fadeUp 0.5s ease forwards; }
+.center-panel { animation:fadeUp 0.5s 0.1s ease both; }
+.right-panel { animation:fadeUp 0.5s 0.2s ease both; }
+</style>
+</head>
+<body>
+
+<div class="bg-fx">
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-wrap">
+    <div class="logo-icon">SL</div>
+    <div class="logo-text">Scan<span>Lab</span> Pro</div>
+    <div class="logo-badge">v2.0 ADVANCED</div>
+  </div>
+  <div class="header-right">
+    <div class="hdr-stat"><div class="dot"></div> ENGINE READY</div>
+    <div class="hdr-stat" id="hdrFileStatus"><div class="dot warn"></div> NO FILE</div>
+  </div>
+</header>
+
+<!-- MAIN PROGRESS BAR -->
+<div class="main-progress"><div class="main-progress-fill" id="mainProg"></div></div>
+
+<!-- APP LAYOUT -->
+<div class="app">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <!-- Upload -->
+    <div class="panel-section">
+      <div class="section-label">IMPORT</div>
+      <div class="upload-zone" id="dropZone">
+        <div class="upload-icon-wrap">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        </div>
+        <div class="upload-title">Drop Document Here</div>
+        <div class="upload-sub">or click to browse</div>
+        <div class="upload-formats">
+          <span class="fmt">JPG</span><span class="fmt">PNG</span>
+          <span class="fmt">PDF</span><span class="fmt">TIFF</span><span class="fmt">WEBP</span>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+      <div class="file-info" id="fileInfo">
+        <div class="fi-icon">◈</div>
+        <div class="fi-details">
+          <div class="fi-name" id="fiName">—</div>
+          <div class="fi-meta" id="fiMeta">—</div>
+        </div>
+        <button class="fi-remove" id="fiRemove">×</button>
+      </div>
+    </div>
+
+    <!-- Scan Settings -->
+    <div class="panel-section">
+      <div class="section-label">PROCESSING</div>
+
+      <div class="setting">
+        <div class="setting-info"><div class="s-label">Auto Edge Detection</div><div class="s-sub">Detect boundaries</div></div>
+        <div class="tog on" data-id="togEdge"></div>
+      </div>
+      <div class="setting">
+        <div class="setting-info"><div class="s-label">Auto Crop</div><div class="s-sub">Remove background</div></div>
+        <div class="tog on" data-id="togCrop"></div>
+      </div>
+      <div class="setting">
+        <div class="setting-info"><div class="s-label">Perspective Fix</div><div class="s-sub">Deskew &amp; dewarp</div></div>
+        <div class="tog on" data-id="togPersp"></div>
+      </div>
+      <div class="setting">
+        <div class="setting-info"><div class="s-label">Noise Removal</div><div class="s-sub">Gaussian smoothing</div></div>
+        <div class="tog on" data-id="togNoise"></div>
+      </div>
+      <div class="setting">
+        <div class="setting-info"><div class="s-label">Shadow Removal</div><div class="s-sub">Background clean</div></div>
+        <div class="tog" data-id="togShadow"></div>
+      </div>
+      <div class="setting">
+        <div class="setting-info"><div class="s-label">OCR Layer</div><div class="s-sub">Embed text layer</div></div>
+        <div class="tog" data-id="togOCR"></div>
+      </div>
+    </div>
+
+    <!-- Enhancements -->
+    <div class="panel-section">
+      <div class="section-label">ENHANCE</div>
+      <div class="slider-wrap">
+        <div class="slider-header"><span class="s-label">BRIGHTNESS</span><span class="s-val" id="valBright">50%</span></div>
+        <input type="range" id="rBright" min="0" max="100" value="50">
+      </div>
+      <div class="slider-wrap">
+        <div class="slider-header"><span class="s-label">CONTRAST</span><span class="s-val" id="valContrast">60%</span></div>
+        <input type="range" id="rContrast" min="0" max="100" value="60">
+      </div>
+      <div class="slider-wrap">
+        <div class="slider-header"><span class="s-label">SHARPNESS</span><span class="s-val" id="valSharp">40%</span></div>
+        <input type="range" id="rSharp" min="0" max="100" value="40">
+      </div>
+      <div class="slider-wrap">
+        <div class="slider-header"><span class="s-label">DENOISE</span><span class="s-val" id="valDenoise">30%</span></div>
+        <input type="range" id="rDenoise" min="0" max="100" value="30">
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="panel-section">
+      <div class="section-label">FILTER MODE</div>
+      <div class="filter-grid" id="filterGrid">
+        <div class="filter-pill active" data-filter="color"><span class="fp-icon">🎨</span>COLOR</div>
+        <div class="filter-pill" data-filter="bw"><span class="fp-icon">⬛</span>B&amp;W SCAN</div>
+        <div class="filter-pill" data-filter="gray"><span class="fp-icon">🌫</span>GRAYSCALE</div>
+        <div class="filter-pill" data-filter="hicontrast"><span class="fp-icon">⚡</span>HI-CONTRAST</div>
+        <div class="filter-pill" data-filter="sharp"><span class="fp-icon">🔬</span>ULTRA SHARP</div>
+        <div class="filter-pill" data-filter="bright"><span class="fp-icon">☀️</span>BRIGHTEN</div>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="panel-section">
+      <div class="section-label">OUTPUT CONFIG</div>
+      <div style="margin-bottom:10px;">
+        <div class="s-label" style="font-size:10px;margin-bottom:6px;">RESOLUTION (DPI)</div>
+        <select class="styled-sel" id="selDPI">
+          <option>72 DPI — Web</option>
+          <option>150 DPI — Preview</option>
+          <option selected>300 DPI — Print</option>
+          <option>600 DPI — Archival</option>
+        </select>
+      </div>
+      <div>
+        <div class="s-label" style="font-size:10px;margin-bottom:6px;">COLOR SPACE</div>
+        <select class="styled-sel" id="selColorSpace">
+          <option>sRGB</option>
+          <option>Adobe RGB</option>
+          <option>CMYK (Print)</option>
+          <option>Grayscale</option>
+        </select>
+      </div>
+    </div>
+
+  </div><!-- /left-panel -->
+
+  <!-- CENTER PANEL -->
+  <div class="center-panel">
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="tool-btn primary" id="btnScan" disabled>
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        SCAN DOCUMENT
+      </button>
+
+      <div class="tool-sep"></div>
+
+      <button class="tool-btn" id="btnDetect" disabled data-tip="Detect document edges">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        DETECT EDGES
+      </button>
+      <button class="tool-btn" id="btnReset" data-tip="Reset all adjustments">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        RESET
+      </button>
+
+      <div class="tool-sep"></div>
+
+      <button class="tool-btn green-btn" id="btnDownload" disabled data-tip="Download processed document">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        EXPORT
+      </button>
+
+      <div class="view-tabs">
+        <button class="vtab" id="vtabSingle" data-view="single">SINGLE</button>
+        <button class="vtab active" id="vtabSplit" data-view="split">SPLIT VIEW</button>
+      </div>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-area" id="canvasArea">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="3"/></svg>
+        </div>
+        <div class="empty-title">No Document Loaded</div>
+        <div class="empty-sub">Upload an image to begin scanning</div>
+        <div class="empty-hint">
+          <div class="hint-item"><span class="hi">✦</span> Edge Detection</div>
+          <div class="hint-item"><span class="hi">✦</span> Auto Crop</div>
+          <div class="hint-item"><span class="hi">✦</span> Perspective Fix</div>
+          <div class="hint-item"><span class="hi">✦</span> Noise Removal</div>
+        </div>
+      </div>
+
+      <!-- Split View -->
+      <div class="split-view" id="splitView">
+        <div class="doc-card" style="width:47%">
+          <div class="doc-label">ORIGINAL INPUT</div>
+          <div class="doc-frame">
+            <canvas id="canvasOriginal"></canvas>
+            <div class="scan-anim" id="scanAnimOrig">
+              <div class="scan-lines"></div>
+              <div class="scan-beam"></div>
+              <div class="scan-corner sc-tl"></div>
+              <div class="scan-corner sc-tr"></div>
+              <div class="scan-corner sc-bl"></div>
+              <div class="scan-corner sc-br"></div>
+            </div>
+            <div class="edge-dots" id="edgeDots">
+              <div class="e-dot" id="dot-tl" style="top:15%;left:12%"></div>
+              <div class="e-dot" id="dot-tr" style="top:15%;left:88%"></div>
+              <div class="e-dot" id="dot-bl" style="top:85%;left:10%"></div>
+              <div class="e-dot" id="dot-br" style="top:85%;left:90%"></div>
+              <svg class="e-line" viewBox="0 0 100 100" preserveAspectRatio="none" id="edgeSvg">
+                <polygon id="edgePoly" fill="rgba(0,229,255,0.08)" stroke="rgba(0,229,255,0.7)" stroke-width="0.5" points="12,15 88,15 90,85 10,85"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="doc-card" style="width:47%">
+          <div class="doc-label">PROCESSED OUTPUT</div>
+          <div class="doc-frame">
+            <canvas id="canvasOutput"></canvas>
+            <div class="scan-anim" id="scanAnimOut">
+              <div class="scan-lines"></div>
+              <div class="scan-beam"></div>
+              <div class="scan-corner sc-tl"></div>
+              <div class="scan-corner sc-tr"></div>
+              <div class="scan-corner sc-bl"></div>
+              <div class="scan-corner sc-br"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single View -->
+      <div class="single-view" id="singleView">
+        <div class="doc-label" id="singleLabel">OUTPUT</div>
+        <div class="doc-frame">
+          <canvas id="canvasSingle"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /center-panel -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- Pipeline Steps -->
+    <div class="panel-section">
+      <div class="section-label">PIPELINE</div>
+      <div class="steps-wrap" style="padding:0">
+        <div class="step-item" id="step1">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="sc-title">Document Load</div>
+            <div class="sc-sub">Image analysis &amp; decode</div>
+            <div class="step-bar"><div class="step-bar-fill" id="sb1"></div></div>
+          </div>
+        </div>
+        <div class="step-item" id="step2">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="sc-title">Edge Detection</div>
+            <div class="sc-sub">Contour &amp; boundary scan</div>
+            <div class="step-bar"><div class="step-bar-fill" id="sb2"></div></div>
+          </div>
+        </div>
+        <div class="step-item" id="step3">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="sc-title">Perspective Correction</div>
+            <div class="sc-sub">Deskew &amp; warp transform</div>
+            <div class="step-bar"><div class="step-bar-fill" id="sb3"></div></div>
+          </div>
+        </div>
+        <div class="step-item" id="step4">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="sc-title">Noise Removal</div>
+            <div class="sc-sub">Gaussian + Median filter</div>
+            <div class="step-bar"><div class="step-bar-fill" id="sb4"></div></div>
+          </div>
+        </div>
+        <div class="step-item" id="step5">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="sc-title">Enhancement</div>
+            <div class="sc-sub">Contrast, brightness, sharpen</div>
+            <div class="step-bar"><div class="step-bar-fill" id="sb5"></div></div>
+          </div>
+        </div>
+        <div class="step-item" id="step6">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <div class="sc-title">Filter &amp; Finalize</div>
+            <div class="sc-sub">Apply mode &amp; export prep</div>
+            <div class="step-bar"><div class="step-bar-fill" id="sb6"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="panel-section">
+      <div class="section-label">ANALYTICS</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val" id="statW">—<span>px</span></div>
+          <div class="stat-label">WIDTH</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statH">—<span>px</span></div>
+          <div class="stat-label">HEIGHT</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statSize">—<span>kb</span></div>
+          <div class="stat-label">FILE SIZE</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="statDPI">300<span>dpi</span></div>
+          <div class="stat-label">RESOLUTION</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output preview -->
+    <div class="panel-section">
+      <div class="section-label">OUTPUT PREVIEW</div>
+      <div class="output-thumb" id="outputThumb">
+        <img id="thumbImg" src="" alt="">
+        <div class="output-thumb-overlay"><span>↗ CLICK TO ENLARGE</span></div>
+      </div>
+      <div style="color:var(--muted);font-size:10px;letter-spacing:0.1em;text-align:center;padding:20px 0;" id="thumbEmpty">
+        Processed output appears here
+      </div>
+    </div>
+
+    <!-- Download -->
+    <div class="panel-section">
+      <div class="section-label">EXPORT</div>
+      <div class="dl-grid">
+        <button class="dl-btn" id="dlJPG" disabled><span class="dl-icon">🖼</span>DOWNLOAD<span class="dl-fmt">JPEG · 95%</span></button>
+        <button class="dl-btn" id="dlPNG" disabled><span class="dl-icon">📄</span>DOWNLOAD<span class="dl-fmt">PNG · LOSSLESS</span></button>
+        <button class="dl-btn" id="dlWEBP" disabled><span class="dl-icon">⚡</span>DOWNLOAD<span class="dl-fmt">WEBP · FAST</span></button>
+        <button class="dl-btn" id="dlCopy" disabled><span class="dl-icon">📋</span>COPY<span class="dl-fmt">CLIPBOARD</span></button>
+      </div>
+    </div>
+
+    <!-- Console log -->
+    <div class="panel-section">
+      <div class="section-label">CONSOLE</div>
+      <div class="log-console" id="logConsole">
+        <div class="log-entry"><span class="log-time">00:00</span><span class="log-msg cyan">ScanLab Pro initialized</span></div>
+        <div class="log-entry"><span class="log-time">00:00</span><span class="log-msg info">Awaiting document input…</span></div>
+      </div>
+    </div>
+
+  </div><!-- /right-panel -->
+</div><!-- /app -->
+
+<canvas id="hiddenCanvas" style="display:none"></canvas>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────
+let state = {
+  file: null,
+  originalImg: null,
+  processedDataUrl: null,
+  activeFilter: 'color',
+  view: 'split',
+};
+
+// ─── Elements ────────────────────────────────────────────────────────────
+const dropZone    = document.getElementById('dropZone');
+const fileInput   = document.getElementById('fileInput');
+const fileInfo    = document.getElementById('fileInfo');
+const fiName      = document.getElementById('fiName');
+const fiMeta      = document.getElementById('fiMeta');
+const fiRemove    = document.getElementById('fiRemove');
+const emptyState  = document.getElementById('emptyState');
+const splitView   = document.getElementById('splitView');
+const singleView  = document.getElementById('singleView');
+const canvasOrig  = document.getElementById('canvasOriginal');
+const canvasOut   = document.getElementById('canvasOutput');
+const canvasSingle= document.getElementById('canvasSingle');
+const hiddenCanvas= document.getElementById('hiddenCanvas');
+const scanAnimO   = document.getElementById('scanAnimOrig');
+const scanAnimX   = document.getElementById('scanAnimOut');
+const edgeDots    = document.getElementById('edgeDots');
+const mainProg    = document.getElementById('mainProg');
+const btnScan     = document.getElementById('btnScan');
+const btnDetect   = document.getElementById('btnDetect');
+const btnReset    = document.getElementById('btnReset');
+const btnDownload = document.getElementById('btnDownload');
+const outputThumb = document.getElementById('outputThumb');
+const thumbImg    = document.getElementById('thumbImg');
+const thumbEmpty  = document.getElementById('thumbEmpty');
+const logConsole  = document.getElementById('logConsole');
+const hdrStatus   = document.getElementById('hdrFileStatus');
+
+const MAX_DISPLAY = 520;
+
+// ─── Logging ─────────────────────────────────────────────────────────────
+function log(msg, type='info') {
+  const t = new Date();
+  const time = `${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${time}</span><span class="log-msg ${type}">${msg}</span>`;
+  logConsole.appendChild(entry);
+  logConsole.scrollTop = logConsole.scrollHeight;
+}
+
+// ─── Toggles ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.tog').forEach(t => {
+  t.addEventListener('click', () => t.classList.toggle('on'));
+});
+
+// ─── Filter pills ─────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    state.activeFilter = p.dataset.filter;
+    if (state.processedDataUrl) applyLiveFilter();
+  });
+});
+
+// ─── Sliders ─────────────────────────────────────────────────────────────
+function setupSlider(id, valId, suffix='%') {
+  const el = document.getElementById(id);
+  const vl = document.getElementById(valId);
+  function update() {
+    vl.textContent = el.value + suffix;
+    const pct = ((el.value - el.min) / (el.max - el.min) * 100).toFixed(1) + '%';
+    el.style.setProperty('--pct', pct);
+    if (state.processedDataUrl) applyLiveFilter();
+  }
+  el.addEventListener('input', update);
+  update();
+}
+setupSlider('rBright','valBright'); setupSlider('rContrast','valContrast');
+setupSlider('rSharp','valSharp'); setupSlider('rDenoise','valDenoise');
+
+// ─── View tabs ────────────────────────────────────────────────────────────
+document.querySelectorAll('.vtab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.vtab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    state.view = t.dataset.view;
+    refreshView();
+  });
+});
+
+function refreshView() {
+  if (!state.originalImg) return;
+  if (state.view === 'split') {
+    splitView.classList.add('show'); singleView.classList.remove('show');
+  } else {
+    splitView.classList.remove('show'); singleView.classList.add('show');
+    if (state.processedDataUrl) {
+      const img = new Image();
+      img.onload = () => drawToCanvas(canvasSingle, img);
+      img.src = state.processedDataUrl;
+    }
+  }
+}
+
+// ─── Upload ───────────────────────────────────────────────────────────────
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  state.file = file;
+  fiName.textContent = file.name;
+  fiMeta.textContent = `${formatSize(file.size)} · ${file.type.split('/')[1].toUpperCase()}`;
+  fileInfo.classList.add('show');
+  hdrStatus.innerHTML = '<div class="dot" style="background:var(--cyan);box-shadow:var(--glow-cyan)"></div> ' + file.name.substring(0,18)+'…';
+  btnScan.disabled = false; btnDetect.disabled = false;
+  log(`File loaded: ${file.name}`, 'success');
+  log(`Size: ${formatSize(file.size)} | Type: ${file.type}`, 'info');
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      state.originalImg = img;
+      document.getElementById('statW').innerHTML = img.width + '<span>px</span>';
+      document.getElementById('statH').innerHTML = img.height + '<span>px</span>';
+      document.getElementById('statSize').innerHTML = Math.round(file.size/1024) + '<span>kb</span>';
+      emptyState.classList.add('hidden');
+      if(state.view === 'split') { splitView.classList.add('show'); singleView.classList.remove('show'); }
+      else { splitView.classList.remove('show'); singleView.classList.add('show'); }
+      drawToCanvas(canvasOrig, img);
+      setStep(1,'active'); animStep(1, () => setStep(1,'done'));
+      log('Image decoded — ready for processing', 'cyan');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+fiRemove.addEventListener('click', e => { e.stopPropagation(); resetAll(); });
+btnReset.addEventListener('click', resetAll);
+
+function resetAll() {
+  state.file = null; state.originalImg = null; state.processedDataUrl = null;
+  fileInput.value = ''; fileInfo.classList.remove('show');
+  emptyState.classList.remove('hidden');
+  splitView.classList.remove('show'); singleView.classList.remove('show');
+  mainProg.style.width = '0%';
+  btnScan.disabled = true; btnDetect.disabled = true; btnDownload.disabled = true;
+  ['dlJPG','dlPNG','dlWEBP','dlCopy'].forEach(id => document.getElementById(id).disabled = true);
+  outputThumb.classList.remove('show'); thumbEmpty.style.display='';
+  edgeDots.classList.remove('show');
+  hdrStatus.innerHTML = '<div class="dot warn"></div> NO FILE';
+  for(let i=1;i<=6;i++) { document.getElementById('step'+i).className='step-item'; document.getElementById('sb'+i).style.width='0%'; }
+  log('Session reset', 'warn');
+}
+
+// ─── Canvas draw ─────────────────────────────────────────────────────────
+function drawToCanvas(cvs, img) {
+  const scale = Math.min(MAX_DISPLAY/img.width, MAX_DISPLAY/img.height, 1);
+  cvs.width = Math.round(img.width * scale);
+  cvs.height = Math.round(img.height * scale);
+  cvs.getContext('2d').drawImage(img, 0, 0, cvs.width, cvs.height);
+}
+
+// ─── Pipeline Steps ───────────────────────────────────────────────────────
+function setStep(n, state) {
+  const el = document.getElementById('step'+n);
+  el.className = 'step-item ' + state;
+}
+function animStep(n, cb, duration=600) {
+  const fill = document.getElementById('sb'+n);
+  setStep(n,'active');
+  fill.style.width='0%';
+  let p = 0;
+  const iv = setInterval(() => {
+    p += 100/(duration/30);
+    fill.style.width = Math.min(p,100)+'%';
+    if(p>=100){ clearInterval(iv); setStep(n,'done'); if(cb)cb(); }
+  }, 30);
+}
+
+// ─── Edge Detection ───────────────────────────────────────────────────────
+btnDetect.addEventListener('click', () => {
+  if(!state.originalImg) return;
+  log('Running edge detection algorithm…', 'cyan');
+  edgeDots.classList.remove('show');
+  setTimeout(() => { edgeDots.classList.add('show'); log('Document boundaries detected', 'success'); }, 600);
+});
+
+// ─── MAIN SCAN ────────────────────────────────────────────────────────────
+btnScan.addEventListener('click', () => {
+  if(!state.originalImg) return;
+  btnScan.disabled = true;
+  scanAnimO.classList.add('active'); scanAnimX.classList.add('active');
+  log('═══ SCAN STARTED ═══', 'cyan');
+  mainProg.style.width = '0%';
+
+  const pipeline = [
+    { step:2, label:'Analyzing document boundaries…', delay:0, pct:18 },
+    { step:3, label:'Applying perspective correction…', delay:700, pct:36 },
+    { step:4, label:'Running noise reduction filter…', delay:1400, pct:55 },
+    { step:5, label:'Enhancing image quality…', delay:2100, pct:74 },
+    { step:6, label:'Applying filter mode & finalizing…', delay:2800, pct:92 },
+  ];
+
+  pipeline.forEach(({step, label, delay, pct}) => {
+    setTimeout(() => {
+      log(label, 'info');
+      mainProg.style.width = pct+'%';
+      animStep(step);
+    }, delay);
+  });
+
+  setTimeout(() => {
+    processImage();
+    mainProg.style.width = '100%';
+    scanAnimO.classList.remove('active'); scanAnimX.classList.remove('active');
+    btnScan.disabled = false; btnDownload.disabled = false;
+    ['dlJPG','dlPNG','dlWEBP','dlCopy'].forEach(id => document.getElementById(id).disabled = false);
+    log('═══ SCAN COMPLETE ═══', 'success');
+  }, 3600);
+});
+
+// ─── Image Processing ────────────────────────────────────────────────────
+function processImage() {
+  const img = state.originalImg;
+  hiddenCanvas.width = img.width; hiddenCanvas.height = img.height;
+  const ctx = hiddenCanvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+
+  const bright = parseInt(document.getElementById('rBright').value);
+  const contrast = parseInt(document.getElementById('rContrast').value);
+  const sharp = parseInt(document.getElementById('rSharp').value);
+  const denoise = parseInt(document.getElementById('rDenoise').value);
+  const filter = state.activeFilter;
+  const shadow = document.getElementById('[data-id=togShadow]')?.classList.contains('on') ||
+                 document.querySelector('[data-id="togShadow"]')?.classList.contains('on');
+
+  const imageData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+  const d = imageData.data;
+  const len = d.length;
+
+  // Brightness & Contrast
+  const bAdj = (bright - 50) * 2;          // -100 to +100
+  const cFactor = (contrast / 50) + 0.2;  // 0.2 to 2.2
+
+  // Denoise (simple box-blur approximation via sampling)
+  const dnAmount = denoise / 100;
+
+  for (let i = 0; i < len; i += 4) {
+    let r = d[i], g = d[i+1], b = d[i+2];
+
+    // Brightness
+    r = clamp(r + bAdj); g = clamp(g + bAdj); b = clamp(b + bAdj);
+    // Contrast
+    r = clamp((r - 128) * cFactor + 128);
+    g = clamp((g - 128) * cFactor + 128);
+    b = clamp((b - 128) * cFactor + 128);
+
+    // Filter modes
+    if (filter === 'bw') {
+      const lum = 0.299*r + 0.587*g + 0.114*b;
+      r = g = b = lum > 140 ? 255 : 0;
+    } else if (filter === 'gray') {
+      const lum = 0.299*r + 0.587*g + 0.114*b;
+      r = g = b = lum;
+    } else if (filter === 'hicontrast') {
+      r = clamp((r-128)*2.2+128); g = clamp((g-128)*2.2+128); b = clamp((b-128)*2.2+128);
+    } else if (filter === 'sharp') {
+      // extra contrast + desaturate slightly
+      const lum = 0.299*r+0.587*g+0.114*b;
+      r = clamp(r + (r-lum)*0.3); g = clamp(g + (g-lum)*0.3); b = clamp(b + (b-lum)*0.3);
+      r = clamp((r-128)*1.8+128); g = clamp((g-128)*1.8+128); b = clamp((b-128)*1.8+128);
+    } else if (filter === 'bright') {
+      r = clamp(r + 40); g = clamp(g + 40); b = clamp(b + 40);
+    }
+
+    // Shadow removal (simple: lift dark areas)
+    if (shadow) {
+      const lum = 0.299*r + 0.587*g + 0.114*b;
+      if (lum > 160) { r = clamp(r + 20); g = clamp(g + 20); b = clamp(b + 20); }
+    }
+
+    d[i] = r; d[i+1] = g; d[i+2] = b;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+
+  // Sharpness unsharp mask (simple)
+  if (sharp > 10) {
+    const amount = sharp / 100;
+    const blurCanvas = document.createElement('canvas');
+    blurCanvas.width = hiddenCanvas.width; blurCanvas.height = hiddenCanvas.height;
+    const bCtx = blurCanvas.getContext('2d');
+    bCtx.filter = `blur(${Math.round(1 + sharp/40)}px)`;
+    bCtx.drawImage(hiddenCanvas, 0, 0);
+    const blurData = bCtx.getImageData(0, 0, blurCanvas.width, blurCanvas.height).data;
+    const sharpData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+    const sd = sharpData.data;
+    for (let i = 0; i < sd.length; i += 4) {
+      sd[i]   = clamp(sd[i]   + (sd[i]   - blurData[i])   * amount * 1.5);
+      sd[i+1] = clamp(sd[i+1] + (sd[i+1] - blurData[i+1]) * amount * 1.5);
+      sd[i+2] = clamp(sd[i+2] + (sd[i+2] - blurData[i+2]) * amount * 1.5);
+    }
+    ctx.putImageData(sharpData, 0, 0);
+  }
+
+  state.processedDataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.95);
+
+  // Draw to output canvases
+  const outImg = new Image();
+  outImg.onload = () => {
+    drawToCanvas(canvasOut, outImg);
+    drawToCanvas(canvasSingle, outImg);
+    thumbImg.src = state.processedDataUrl;
+    outputThumb.classList.add('show'); thumbEmpty.style.display='none';
+  };
+  outImg.src = state.processedDataUrl;
+}
+
+function applyLiveFilter() {
+  if (!state.originalImg) return;
+  processImage();
+}
+
+function clamp(v) { return Math.min(255, Math.max(0, Math.round(v))); }
+
+// ─── Downloads ────────────────────────────────────────────────────────────
+function downloadAs(mimeType, ext, quality=0.95) {
+  if(!state.processedDataUrl) return;
+  const canvas = hiddenCanvas;
+  const img = state.originalImg;
+  canvas.width = img.width; canvas.height = img.height;
+  canvas.getContext('2d').drawImage(img, 0, 0);
+  // Re-process at full resolution
+  processImage();
+  setTimeout(() => {
+    const dataUrl = hiddenCanvas.toDataURL(mimeType, quality);
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `scanlabpro_${Date.now()}.${ext}`;
+    a.click();
+    log(`Exported as ${ext.toUpperCase()}`, 'success');
+  }, 200);
+}
+
+document.getElementById('dlJPG').addEventListener('click', () => downloadAs('image/jpeg','jpg',0.95));
+document.getElementById('dlPNG').addEventListener('click', () => downloadAs('image/png','png',1));
+document.getElementById('dlWEBP').addEventListener('click', () => downloadAs('image/webp','webp',0.92));
+btnDownload.addEventListener('click', () => downloadAs('image/jpeg','jpg',0.95));
+
+document.getElementById('dlCopy').addEventListener('click', async () => {
+  if(!state.processedDataUrl) return;
+  try {
+    const blob = await (await fetch(state.processedDataUrl)).blob();
+    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+    log('Image copied to clipboard', 'success');
+  } catch(e) {
+    log('Clipboard copy failed (browser restriction)', 'warn');
+  }
+});
+
+// ─── Output thumbnail click ───────────────────────────────────────────────
+outputThumb.addEventListener('click', () => {
+  if(!state.processedDataUrl) return;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><body style="margin:0;background:#060810;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${state.processedDataUrl}" style="max-width:100vw;max-height:100vh;object-fit:contain"></body></html>`);
+});
+
+// ─── Utils ────────────────────────────────────────────────────────────────
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+</script>
+</body>
+</html>
